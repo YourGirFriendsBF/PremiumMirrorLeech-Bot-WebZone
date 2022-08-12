@@ -2,7 +2,7 @@ from random import SystemRandom
 from string import ascii_letters, digits
 from telegram.ext import CommandHandler
 from threading import Thread
-from time import time, sleep
+from time import sleep
 
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
 from bot.helper.telegram_helper.message_utils import sendMessage, sendMarkup, deleteMessage, delete_all_messages, update_all_messages, sendStatusMessage, auto_delete_upload_message
@@ -10,8 +10,8 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.mirror_utils.status_utils.clone_status import CloneStatus
 from bot import dispatcher, LOGGER, CLONE_LIMIT, STOP_DUPLICATE, download_dict, download_dict_lock, Interval, BOT_PM, MIRROR_LOGS, AUTO_DELETE_UPLOAD_MESSAGE_DURATION, CLONE_ENABLED, LINK_LOGS
-from bot.helper.ext_utils.bot_utils import get_readable_file_size, is_gdrive_link, is_gdtot_link, new_thread, is_appdrive_link
-from bot.helper.mirror_utils.download_utils.direct_link_generator import gdtot, appdrive
+from bot.helper.ext_utils.bot_utils import *
+from bot.helper.mirror_utils.download_utils.direct_link_generator import *
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from telegram import InlineKeyboardMarkup, ParseMode
 from bot.helper.telegram_helper.button_build import ButtonMaker
@@ -61,7 +61,7 @@ def _clone(message, bot, multi=0):
     args = message.text.split()
     reply_to = message.reply_to_message
     link = ''
-    
+
     if len(args) > 1:
         link = args[1].strip()
         if link.strip().isdigit():
@@ -84,6 +84,7 @@ def _clone(message, bot, multi=0):
         try:
             msg = sendMessage(f"Processing: <code>{link}</code>", bot, message)
             link = gdtot(link)
+            LOGGER.info(f"Processing GdToT: {link}")
             deleteMessage(bot, msg)
         except DirectDownloadLinkException as e:
             deleteMessage(bot, msg)
@@ -93,6 +94,7 @@ def _clone(message, bot, multi=0):
         try:
             apdict = appdrive(link)
             link = apdict.get('gdrive_link')
+            LOGGER.info(f"Processing AppDrive: {link}")
             deleteMessage(bot, msg)
         except DirectDownloadLinkException as e:
             deleteMessage(bot, msg)
@@ -106,7 +108,7 @@ def _clone(message, bot, multi=0):
             LOGGER.info('Checking File/Folder if already in Drive...')
             smsg, button = gd.drive_list(name, True, True)
             if smsg:
-                msg3 = "File/Folder is already available in Drive.\nHere are the search results:"
+                msg3 = "Someone already mirrored it for you !\nHere you go:"
                 return sendMarkup(msg3, bot, message, button)
         if CLONE_LIMIT is not None:
             LOGGER.info('Checking File/Folder Size...')
@@ -153,25 +155,24 @@ def _clone(message, bot, multi=0):
             LOGGER.info(f'Cloning Done: {name}')
             Thread(target=auto_delete_upload_message, args=(bot, message, msg)).start()
         if is_gdtot:
-            gd.deleteFile(link)
+            gd.deletefile(link)
         elif is_appdrive:
             if apdict.get('link_type') == 'login':
                 LOGGER.info(f"Deleting: {link}")
-                gd.deleteFile(link)   
-        if MIRROR_LOGS:
-            try:
-                for chatid in MIRROR_LOGS:
-                    bot.sendMessage(chat_id=chatid, text=result + cc, reply_markup=button, parse_mode=ParseMode.HTML)
-            except Exception as e:
-                LOGGER.warning(e)
-        if BOT_PM and message.chat.type != 'private':
-            try:
-                bot.sendMessage(message.from_user.id, text=result, reply_markup=button,
-                                parse_mode=ParseMode.HTML)
-            except Exception as e:
-                LOGGER.warning(e)
+                gd.deletefile(link)  
+        if MIRROR_LOGS:	
+            try:	
+                for chatid in MIRROR_LOGS:	
+                    bot.sendMessage(chat_id=chatid, text=result + cc, reply_markup=button, parse_mode=ParseMode.HTML)	
+            except Exception as e:	
+                LOGGER.warning(e)	
+        if BOT_PM and message.chat.type != 'private':	
+            try:	
+                bot.sendMessage(message.from_user.id, text=result, reply_markup=button,	
+                                parse_mode=ParseMode.HTML)	
+            except Exception as e:	
+                LOGGER.warning(e)	
                 return
-    gd.deleteFile(link)
     mesg = message.text.split('\n')
     message_args = mesg[0].split(' ', maxsplit=1)
     user_id = message.from_user.id
@@ -194,7 +195,7 @@ def _clone(message, bot, multi=0):
                 except TypeError:
                     pass  
     else:
-        sendMessage('Send Gdrive, appdrive or gdtot link along with command or by replying to the link by command', bot, message)
+        return sendMessage(f"Please enter a valid command.\nRead /{BotCommands.HelpCommand} and try again.", bot, message)
 
 @new_thread
 def cloneNode(update, context):

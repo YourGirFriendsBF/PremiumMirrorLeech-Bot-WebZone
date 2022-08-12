@@ -1,4 +1,5 @@
 from time import time
+
 from bot import DOWNLOAD_DIR, LOGGER
 from bot.helper.ext_utils.bot_utils import get_readable_file_size, MirrorStatus, EngineStatus, get_readable_time
 from bot.helper.ext_utils.fs_utils import get_path_size
@@ -24,6 +25,7 @@ class ExtractStatus:
             return self.processed_bytes() / self.__size * 100
         except:
             return 0
+
     def progress(self):
         return f'{round(self.progress_raw(), 2)}%'
 
@@ -50,7 +52,10 @@ class ExtractStatus:
         return MirrorStatus.STATUS_EXTRACTING
 
     def processed_bytes(self):
-        return get_path_size(f"{DOWNLOAD_DIR}{self.__uid}") - self.__size
+        if self.__listener.newDir:
+            return get_path_size(f"{DOWNLOAD_DIR}{self.__uid}10000")
+        else:
+            return get_path_size(f"{DOWNLOAD_DIR}{self.__uid}") - self.__size
 
     def download(self):
         return self

@@ -10,7 +10,6 @@ class TelegramDownloadStatus:
     def gid(self):
         return self.__gid
 
-
     def processed_bytes(self):
         return self.__obj.downloaded_bytes
 

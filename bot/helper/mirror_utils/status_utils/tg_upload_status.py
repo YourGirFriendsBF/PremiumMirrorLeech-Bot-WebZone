@@ -8,7 +8,6 @@ class TgUploadStatus:
         self.__gid = gid
         self.message = listener.message
 
-
     def processed_bytes(self):
         return self.__obj.uploaded_bytes
 

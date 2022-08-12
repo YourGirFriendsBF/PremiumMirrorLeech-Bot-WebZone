@@ -1,3 +1,4 @@
+
 from anytree import NodeMixin
 from re import findall as re_findall
 from os import environ
@@ -29,6 +30,7 @@ def qb_get_folders(path):
 def get_folders(path):
     fs = re_findall(DOWNLOAD_DIR + r'[0-9]+/(.+)', path)[0]
     return fs.split('/')
+
 
 def make_tree(res, aria2=False):
     parent = TorNode("Torrent")

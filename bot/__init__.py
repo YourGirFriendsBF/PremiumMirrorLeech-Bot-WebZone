@@ -144,7 +144,7 @@ AUTHORIZED_CHATS = set()
 SUDO_USERS = set()
 AS_DOC_USERS = set()
 AS_MEDIA_USERS = set()
-EXTENSION_FILTER = set()
+EXTENSION_FILTER = set(['.aria2'])
 LEECH_LOG = set()	
 MIRROR_LOGS = set()
 LINK_LOGS = set()
@@ -212,28 +212,9 @@ except KeyError as e:
     AUTO_DELETE_UPLOAD_MESSAGE_DURATION = -1
     LOGGER.warning("AUTO_DELETE_UPLOAD_MESSAGE_DURATION var missing!")
     pass
-LOGGER.info("Generating BOT_SESSION_STRING")
+
+LOGGER.info("Generating SESSION_STRING")
 app = Client(name='pyrogram', api_id=int(TELEGRAM_API), api_hash=TELEGRAM_HASH, bot_token=BOT_TOKEN, parse_mode=enums.ParseMode.HTML, no_updates=True)
-
-try:
-    RSS_USER_SESSION_STRING = getConfig('RSS_USER_SESSION_STRING')
-    if len(RSS_USER_SESSION_STRING) == 0:
-        raise KeyError
-    rss_session = Client(name='rss_session', api_id=int(TELEGRAM_API), api_hash=TELEGRAM_HASH,
-                         session_string=RSS_USER_SESSION_STRING, parse_mode=enums.ParseMode.HTML, no_updates=True)
-except:
-    RSS_USER_SESSION_STRING = None
-    rss_session = None
-
-
-try:
-    USER_SESSION_STRING = getConfig('USER_SESSION_STRING')
-    if len(USER_SESSION_STRING) == 0:
-        raise KeyError
-    app_session = Client(name='app_session', api_id=int(TELEGRAM_API), api_hash=TELEGRAM_HASH, session_string=USER_SESSION_STRING, parse_mode=enums.ParseMode.HTML, no_updates=True)
-except:
-    USER_SESSION_STRING = None
-    app_session = None
 
 def aria2c_init():
     try:
@@ -291,26 +272,40 @@ try:
         raise KeyError
 except:
     DB_URI = None
-if USER_SESSION_STRING:
-    try:
-        with app_session:
-            user = app_session.get_me()
-            try:
-                if user.is_premium:
-                    MAX_LEECH_SIZE = 4194304000
-                    LOGGER.info("User is Premium Max Leech Size is 4 GB")
-                else:
-                    MAX_LEECH_SIZE = 2097152000
-                    LOGGER.info("User is not Premium Max Leech Size is 2 GB")
-            except Exception as e:
-             MAX_LEECH_SIZE = 2097152000
-             LOGGER.info(f"{e} Max Leech Size is 2 GB")
-    except Exception as e:
-        MAX_LEECH_SIZE = 2097152000
-        LOGGER.info(f"{e} Max Leech Size is 2 GB")
-else:
-    MAX_LEECH_SIZE = 2097152000
-    LOGGER.info(f"User Session String Was not provided Skipping Premium acc verification.")
+tgBotMaxFileSize = 2097151000
+try:
+    TG_SPLIT_SIZE = getConfig('TG_SPLIT_SIZE')
+    if len(TG_SPLIT_SIZE) == 0 or int(TG_SPLIT_SIZE) > tgBotMaxFileSize:
+        raise KeyError
+    TG_SPLIT_SIZE = int(TG_SPLIT_SIZE)
+except:
+    TG_SPLIT_SIZE = tgBotMaxFileSize
+try:
+    USER_SESSION_STRING = getConfig('USER_SESSION_STRING')
+    if len(USER_SESSION_STRING) == 0:
+        raise KeyError
+    premium_session = Client(name='premium_session', api_id=int(TELEGRAM_API), api_hash=TELEGRAM_HASH, session_string=USER_SESSION_STRING, parse_mode=enums.ParseMode.HTML, no_updates=True)
+    if not premium_session:
+        LOGGER.error("Cannot initialized User Session. Please regenerate USER_SESSION_STRING")
+    else:
+        premium_session.start()
+        if (premium_session.get_me()).is_premium:
+            if not LEECH_LOG:
+                LOGGER.error("You must set LEECH_LOG for uploads. Eiting now.")
+                try: premium_session.send_message(OWNER_ID, "You must set LEECH_LOG for uploads, Exiting Now...")
+                except Exception as e: LOGGER.exception(e)
+                premium_session.stop()
+                app.stop()
+                exit(1)
+            TG_SPLIT_SIZE = 4194304000
+            LOGGER.info("Telegram Premium detected! Leech limit is 4GB now.")
+        elif (not DB_URI) or (not RSS_CHAT_ID):
+            premium_session.stop()
+            LOGGER.info(f"Not using rss. if you want to use fill RSS_CHAT_ID and DB_URI variables.")
+except:
+    USER_SESSION_STRING = None
+    premium_session = None
+LOGGER.info(f"TG_SPLIT_SIZE: {TG_SPLIT_SIZE}")
 try:
     STATUS_LIMIT = getConfig('STATUS_LIMIT')
     if len(STATUS_LIMIT) == 0:
@@ -393,19 +388,20 @@ try:
 except:
     ZIP_UNZIP_LIMIT = None
 try:
-    LEECH_LIMIT = getConfig('LEECH_LIMIT')
-    if len(LEECH_LIMIT) == 0:
-        raise KeyError
-    LEECH_LIMIT = float(LEECH_LIMIT)
-except:
-    LEECH_LIMIT = None
-try:
     RSS_CHAT_ID = getConfig('RSS_CHAT_ID')
     if len(RSS_CHAT_ID) == 0:
         raise KeyError
     RSS_CHAT_ID = int(RSS_CHAT_ID)
 except:
     RSS_CHAT_ID = None
+try:
+    RSS_USER_SESSION_STRING = getConfig('RSS_USER_SESSION_STRING')
+    if len(RSS_USER_SESSION_STRING) == 0:
+        raise KeyError
+    rss_session = Client(name='rss_session', api_id=int(TELEGRAM_API), api_hash=TELEGRAM_HASH, session_string=RSS_USER_SESSION_STRING, parse_mode=enums.ParseMode.HTML, no_updates=True)
+except:
+    USER_SESSION_STRING = None
+    rss_session = None
 try:
     RSS_DELAY = getConfig('RSS_DELAY')
     if len(RSS_DELAY) == 0:
@@ -496,11 +492,6 @@ try:
 except:
     EQUAL_SPLITS = False
 try:
-    QB_SEED = getConfig('QB_SEED')
-    QB_SEED = QB_SEED.lower() == 'true'
-except:
-    QB_SEED = False
-try:
     CUSTOM_FILENAME = getConfig('CUSTOM_FILENAME')
     if len(CUSTOM_FILENAME) == 0:
         raise KeyError
@@ -516,6 +507,7 @@ try:
     LEECH_ENABLED = LEECH_ENABLED.lower() == "true"
 except:
     LEECH_ENABLED = False
+
 try:
     WATCH_ENABLED = getConfig("WATCH_ENABLED")
     WATCH_ENABLED = WATCH_ENABLED.lower() == "true"

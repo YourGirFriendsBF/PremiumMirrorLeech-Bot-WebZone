@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# (c) YashDK [yash-dk@github]
+# Redesigned By - @bipuldey19 (https://github.com/SlamDevs/slam-mirrorbot/commit/1e572f4fa3625ecceb953ce6d3e7cf7334a4d542#diff-c3d91f56f4c5d8b5af3d856d15a76bd5f00aa38d712691b91501734940761bdd)
 
 from logging import getLogger, FileHandler, StreamHandler, INFO, basicConfig
 from time import sleep
@@ -8,7 +11,7 @@ from flask import Flask, request
 from web.nodes import make_tree
 
 app = Flask(__name__)
-
+aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret=""))
 basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[FileHandler('log.txt'), StreamHandler()],
                     level=INFO)
@@ -212,7 +215,7 @@ input[type="submit"]:hover, input[type="submit"]:focus{
 <script>
 function s_validate() {
     if ($("input[name^='filenode_']:checked").length == 0) {
-        alert("Select one file at least!");
+        alert("Please select at least one file");
         return false;
         }
     }
@@ -227,7 +230,7 @@ function s_validate() {
           alt="logo"
         />
         <a href="https://t.me/krn2701">
-          <h2 class="name">Bittorrent</h2>
+          <h2 class="name">Qbittorrent Selection</h2>
         </a>
       </div>
       <div class="social">
@@ -619,7 +622,7 @@ section span{
           alt="logo"
         />
         <a href="https://t.me/krn2701">
-          <h2 class="name">Bittorrent</h2>
+          <h2 class="name">Qbittorrent Selection</h2>
         </a>
       </div>
       <div class="social">
@@ -655,18 +658,21 @@ def re_verfiy(paused, resumed, client, hash_id):
         paused = paused.split("|")
     if resumed:
         resumed = resumed.split("|")
-
     k = 0
     while True:
+
         res = client.torrents_files(torrent_hash=hash_id)
         verify = True
+
         for i in res:
             if str(i.id) in paused and i.priority != 0:
                 verify = False
                 break
+
             if str(i.id) in resumed and i.priority == 0:
                 verify = False
                 break
+
         if verify:
             break
         LOGGER.info("Reverification Failed! Correcting stuff...")
@@ -696,7 +702,6 @@ def list_torrent_contents(id_):
 
     if "pin_code" not in request.args.keys():
         return code_page.replace("{form_url}", f"/app/files/{id_}")
-
     pincode = ""
     for nbr in id_:
         if nbr.isdigit():
@@ -712,7 +717,6 @@ def list_torrent_contents(id_):
         cont = make_tree(res)
         client.auth_log_out()
     else:
-        aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret=""))
         res = aria2.client.get_files(id_)
         cont = make_tree(res, True)
     return page.replace("{My_content}", cont[0]).replace("{form_url}", f"/app/files/{id_}?pin_code={pincode}")
@@ -766,7 +770,6 @@ def set_priority(id_):
 
         resume = resume.strip(",")
 
-        aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret=""))
         res = aria2.client.change_option(id_, {'select-file': resume})
         if res == "OK":
             LOGGER.info(f"Verified! Gid: {id_}")

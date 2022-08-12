@@ -30,7 +30,7 @@ class _BotCommands:
         self.StatsCommand = getCommand('STATS_COMMAND', f'stats{CMD_INDEX}')
         self.HelpCommand = getCommand('HELP_COMMAND', f'help{CMD_INDEX}')
         self.LogCommand = getCommand('LOG_COMMAND', f'log{CMD_INDEX}')
-        self.BtSelectCommand = getCommand('BTSELECT_COMMAND', f'btsel{CMD_INDEX}')
+        self.BtSelectCommand = getCommand('BTSEL_COMMAND', f'btsel{CMD_INDEX}')
         self.SpeedCommand = getCommand('SPEEDTEST_COMMAND', f'speedtest{CMD_INDEX}')
         self.CloneCommand = getCommand('CLONE_COMMAND', f'clone{CMD_INDEX}')
         self.CountCommand = getCommand('COUNT_COMMAND', f'count{CMD_INDEX}')
@@ -61,9 +61,9 @@ class _BotCommands:
         self.RssUnSubCommand = getCommand('RSSUNSUB_COMMAND', f'rssunsub{CMD_INDEX}')
         self.RssSettingsCommand = getCommand('RSSSET_COMMAND', f'rssset{CMD_INDEX}')
         self.WayBackCommand = getCommand('WAYBACK_COMMAND', f'wayback{CMD_INDEX}')
-        self.SleepCommand = getCommand('SLEEP_COMMAND', f'sleep{CMD_INDEX}')
         self.EvalCommand = f'eval{CMD_INDEX}'
         self.ExecCommand = f'exec{CMD_INDEX}'
         self.ClearLocalsCommand = f'clearlocals{CMD_INDEX}'
+        self.SleepCommand = getCommand('SLEEP_COMMAND', f'sleep{CMD_INDEX}')
 
 BotCommands = _BotCommands()

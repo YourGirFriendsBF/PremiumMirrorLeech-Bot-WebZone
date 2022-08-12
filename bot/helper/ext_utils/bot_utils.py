@@ -87,7 +87,6 @@ def get_readable_file_size(size_in_bytes) -> str:
 def getDownloadByGid(gid):
     with download_dict_lock:
         for dl in list(download_dict.values()):
-            status = dl.status()
             if dl.gid() == gid:
                 return dl
     return None
@@ -122,6 +121,7 @@ def bt_selection_buttons(id_: str):
     buttons.sbutton("Done Selecting", f"btsel done {gid} {id_}")
     return InlineKeyboardMarkup(buttons.build_menu(2))
 
+
 def get_progress_bar_string(status):
     completed = status.processed_bytes() / 8
     total = status.size_raw() / 8
@@ -146,35 +146,19 @@ def get_readable_message():
         for index, download in enumerate(list(download_dict.values())[COUNT:], start=1):
             msg += f"<b>╭📁 Name:</b> <code>{escape(str(download.name()))}</code>"
             msg += f"\n<b>├🤖 Status:</b> <i>{download.status()}</i>"
-            if download.status() not in [MirrorStatus.STATUS_SPLITTING, MirrorStatus.STATUS_SEEDING]:
-                msg += f"\n<b>├</b>{get_progress_bar_string(download)} {download.progress()}"
-                if download.status() in [MirrorStatus.STATUS_DOWNLOADING,
-                                         MirrorStatus.STATUS_WAITING,
-                                         MirrorStatus.STATUS_PAUSED]:
-                    msg += f"\n<b>├🔻Downloaded:</b> {get_readable_file_size(download.processed_bytes())} of {download.size()}"
-                elif download.status() == MirrorStatus.STATUS_UPLOADING:
-                    msg += f"\n<b>├🔺 Uploaded:</b> {get_readable_file_size(download.processed_bytes())} of {download.size()}"
-                elif download.status() == MirrorStatus.STATUS_CLONING:
-                    msg += f"\n<b>├♻️ Cloned:</b> {get_readable_file_size(download.processed_bytes())} of {download.size()}"
-                elif download.status() == MirrorStatus.STATUS_ARCHIVING:
-                    msg += f"\n<b>├🔐 Archived:</b> {get_readable_file_size(download.processed_bytes())} of {download.size()}"
-                elif download.status() == MirrorStatus.STATUS_EXTRACTING:
-                    msg += f"\n<b>├📂 Extracted:</b> {get_readable_file_size(download.processed_bytes())} of {download.size()}"
+            if download.status() not in [MirrorStatus.STATUS_SEEDING, MirrorStatus.STATUS_SPLITTING]:
+                msg += f"\n├ {get_progress_bar_string(download)} {download.progress()}"
+                msg += f"\n<b>├ Processed:</b> {get_readable_file_size(download.processed_bytes())} of {download.size()}"
                 msg += f"\n<b>├⚡ Speed:</b> {download.speed()}"
                 msg += f"\n<b>├⏳ ETA:</b> {download.eta()}"
                 msg += f"\n<b>├⏳ Elapsed: </b>{get_readable_time(time() - download.message.date.timestamp())}"
                 msg += f"\n<b>├⛓️ Engine :</b> {download.eng()}"
                 msg += f"\n<b>├⚠️ Warn: </b> <code>/warn {download.message.from_user.id}</code>"
-                try:
-                    msg += f"\n<b>├🌨 Seeders:</b> {download.aria_download().num_seeders}" \
-                           f" | <b>🧲 Peers:</b> {download.aria_download().connections}"
-                except:
-                    pass
-                try:
-                    msg += f"\n<b>├🌨 Seeders:</b> {download.torrent_info().num_seeds}" \
-                           f" | <b>🧲 Leechers:</b> {download.torrent_info().num_leechs}"
-                except:
-                    pass
+                if hasattr(download, 'seeders_num'):
+                    try:
+                        msg += f"\n<b>Seeders:</b> {download.seeders_num()} | <b>Leechers:</b> {download.leechers_num()}"
+                    except:
+                        pass
                 if download.message.chat.type != 'private':
                     try:
                         chatid = str(download.message.chat.id)[4:]
@@ -187,15 +171,14 @@ def get_readable_message():
             elif download.status() == MirrorStatus.STATUS_SEEDING:
                 msg += f"\n<b>├📦 Size: </b>{download.size()}"
                 msg += f"\n<b>├⛓️ Engine:</b> <code>qBittorrent v4.4.2</code>"
-                msg += f"\n<b>├⚡ Speed: </b>{get_readable_file_size(download.torrent_info().upspeed)}/s"
-                msg += f" | <b>🔺Uploaded: </b>{get_readable_file_size(download.torrent_info().uploaded)}"
-                msg += f"\n<b>├📎 Ratio: </b>{round(download.torrent_info().ratio, 3)}"
-                msg += f" | <b>⏲️ Time: </b>{get_readable_time(download.torrent_info().seeding_time)}"
+                msg += f"\n<b>├⚡ Speed: </b>{download.upload_speed()}"
+                msg += f" | <b>🔺Uploaded: </b>{download.uploaded_bytes()}"
+                msg += f"\n<b>├📎 Ratio: </b>{download.ratio()}"
+                msg += f" | <b>⏲️ Time: </b>{download.seeding_time()}"
                 msg += f"\n<b>├⏳ Elapsed: </b>{get_readable_time(time() - download.message.date.timestamp())}"
             else:
                 msg += f"\n<b>├⛓️ Engine :</b> {download.eng()}"
-                msg += f"\n<b>├📐 Size: </b>{download.size()}"
-                #msg += f"\n<b>_____________________________________</b>"
+                msg += f"\n<b>╰📐 Size: </b>{download.size()}"
             msg += f"\n<b>╰❎ Cancel: </b><code>/{BotCommands.CancelMirror} {download.gid()}</code>"
             msg += f"\n<b>_____________________________________</b>"
             msg += "\n\n"
@@ -218,6 +201,12 @@ def get_readable_message():
                 if 'KB/s' in spd:
                     upspeed_bytes += float(spd.split('K')[0]) * 1024
                 elif 'MB/s' in spd:
+                    upspeed_bytes += float(spd.split('M')[0]) * 1048576
+            elif download.status() == MirrorStatus.STATUS_SEEDING:
+                spd = download.upload_speed()
+                if 'K' in spd:
+                    upspeed_bytes += float(spd.split('K')[0]) * 1024
+                elif 'M' in spd:
                     upspeed_bytes += float(spd.split('M')[0]) * 1048576
         bmsg += f"\n<b>🔻 DL:</b> {get_readable_file_size(dlspeed_bytes)}/s | <b>🔺 UL:</b> {get_readable_file_size(upspeed_bytes)}/s"
         

@@ -23,7 +23,7 @@ from selenium.webdriver.common.by import By
 
 from bot import LOGGER, UPTOBOX_TOKEN, CRYPT, APPDRIVE_EMAIL, APPDRIVE_PASS
 from bot.helper.telegram_helper.bot_commands import BotCommands
-from bot.helper.ext_utils.bot_utils import is_appdrive_link, is_gdtot_link
+from bot.helper.ext_utils.bot_utils import *
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 
 fmed_list = ['fembed.net', 'fembed.com', 'femax20.com', 'fcdn.stream', 'feurl.com', 'layarkacaxxi.icu',
@@ -72,8 +72,6 @@ def direct_link_generator(link: str):
         return krakenfiles(link)
     elif is_gdtot_link(link):
         return gdtot(link)
-    elif is_appdrive_link(link):
-        return appdrive(link)
     elif any(x in link for x in fmed_list):
         return fembed(link)
     elif any(x in link for x in ['sbembed.com', 'watchsb.com', 'streamsb.net', 'sbplay.org']):
@@ -115,7 +113,7 @@ def uptobox(url: str) -> str:
             dl_url = link
         except:
             file_id = re_findall(r'\bhttps?://.*uptobox\.com/(\w+)', url)[0]
-            file_link = f'https://uptobox.com/api/link?token={UPTOBOX_TOKEN}&file_code={file_id}'
+            file_link = 'https://uptobox.com/api/link?token=%s&file_code=%s' % (UPTOBOX_TOKEN, file_id)
             req = rget(file_link)
             result = req.json()
             dl_url = result['data']['dlLink']
@@ -253,8 +251,8 @@ def racaty(url: str) -> str:
     soup = BeautifulSoup(r.text, "lxml")
     op = soup.find("input", {"name": "op"})["value"]
     ids = soup.find("input", {"name": "id"})["value"]
-    rapost = scraper.post(url, data = {"op": op, "id": ids})
-    rsoup = BeautifulSoup(rapost.text, "lxml")
+    rpost = scraper.post(url, data = {"op": op, "id": ids})
+    rsoup = BeautifulSoup(rpost.text, "lxml")
     dl_url = rsoup.find("a", {"id": "uniqueExpirylink"})["href"].replace(" ", "%20")
     return dl_url
 
@@ -344,8 +342,8 @@ def krakenfiles(page_link: str) -> str:
         for item in soup.find_all("div", attrs={"data-file-hash": True})
     ]
     if not hashes:
-        raise DirectDownloadLinkException(
-            f"Hash not found for : {page_link}")
+        raise DirectDownloadLinkException(f"ERROR: Hash not found for : {page_link}")
+
 
     dl_hash = hashes[0]
 
@@ -364,8 +362,8 @@ def krakenfiles(page_link: str) -> str:
     if "url" in dl_link_json:
         return dl_link_json["url"]
     else:
-        raise DirectDownloadLinkException(
-            f"Failed to acquire download URL from kraken for : {page_link}")
+        raise DirectDownloadLinkException(f"ERROR: Failed to acquire download URL from kraken for : {page_link}")
+
 
 def gdtot(url: str) -> str:
     """ Gdtot google drive link generator

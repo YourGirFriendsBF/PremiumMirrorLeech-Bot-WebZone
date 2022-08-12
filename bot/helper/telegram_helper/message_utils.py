@@ -148,6 +148,7 @@ def update_all_messages(force=False):
             return
         for chat_id in status_reply_dict:
             status_reply_dict[chat_id][1] = time()
+
     msg, buttons = get_readable_message()
     if msg is None:
         return
