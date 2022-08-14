@@ -282,32 +282,40 @@ class MirrorLeechListener:
         if self.isLeech:
             if SOURCE_LINK is True:
                 try:
-                    source_link = message_args[1]
-                    if is_magnet(source_link):
+                    mesg = message_args[1]
+                    if is_magnet(mesg):
                         link = telegraph.create_page(
-                        title='WeebZone Source Link',
-                        content=source_link,
-                    )["path"]
+                            title='WeebZone Source Link',
+                            content=mesg,
+                        )["path"]
                         buttons.buildbutton(f"🔗 Source Link", f"https://telegra.ph/{link}")
+                    elif is_url(mesg):
+                        source_link = mesg
+                        if source_link.startswith(("|", "pswd: ")):
+                            pass
+                        else:
+                            buttons.buildbutton(f"🔗 Source Link", source_link)
                     else:
-                        buttons.buildbutton(f"🔗 Source Link", source_link)
+                        pass
                 except Exception:
                     pass
-                if reply_to is not None:
-                    try:
-                        reply_text = reply_to.text
-                        if is_url(reply_text):
-                            source_link = reply_text.strip()
-                            if is_magnet(source_link):
-                                link = telegraph.create_page(
-                                    title='WeebZone Source Link',
-                                    content=source_link,
-                                )["path"]
-                                buttons.buildbutton(f"🔗 Source Link", f"https://telegra.ph/{link}")
-                            else:
-                                buttons.buildbutton(f"🔗 Source Link", source_link)
-                    except Exception:
-                        pass
+            if reply_to is not None:
+                try:
+                    reply_text = reply_to.text
+                    if is_url(reply_text):
+                        source_link = reply_text.strip()
+                        if is_magnet(source_link):
+                            link = telegraph.create_page(
+                                title='WeebZone Source Link',
+                                content=source_link,
+                            )["path"]
+                            buttons.buildbutton(f"🔗 Source Link", f"https://telegra.ph/{link}")
+                        else:
+                            buttons.buildbutton(f"🔗 Source Link", source_link)
+                except Exception:
+                    pass
+            else:
+                pass
             msg += f'\n<b>├📚 Total Files: </b>{folders}'
             if typ != 0:
                 msg += f'\n<b>├💀 Corrupted Files: </b>{typ}'

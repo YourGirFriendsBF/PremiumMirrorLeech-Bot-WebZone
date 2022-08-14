@@ -147,7 +147,7 @@ def get_readable_message():
             msg += f"<b>╭📁 Name:</b> <code>{escape(str(download.name()))}</code>"
             msg += f"\n<b>├🤖 Status:</b> <i>{download.status()}</i>"
             if download.status() not in [MirrorStatus.STATUS_SEEDING, MirrorStatus.STATUS_SPLITTING]:
-                msg += f"\n├ {get_progress_bar_string(download)} {download.progress()}"
+                msg += f"\n<b>├</b>{get_progress_bar_string(download)} {download.progress()}"
                 msg += f"\n<b>├ Processed:</b> {get_readable_file_size(download.processed_bytes())} of {download.size()}"
                 msg += f"\n<b>├⚡ Speed:</b> {download.speed()}"
                 msg += f"\n<b>├⏳ ETA:</b> {download.eta()}"
@@ -279,9 +279,25 @@ def is_gdtot_link(url: str):
     url = re_match(r'https?://.+\.gdtot\.\S+', url)
     return bool(url)
 
-def is_appdrive_link(url: str):
-    url = re_match(r'https?://(?:\S*\.)?(?:appdrive|driveapp)\.info/\S+', url)
-    return bool(url)
+def is_unified_link(url: str):
+    url1 = re_match(r'https?://(anidrive|driveroot|driveflix|indidrive|drivehub)\.in/\S+', url)
+    url = re_match(r'https?://(appdrive|driveapp|driveace|gdflix|drivelinks|drivebit|drivesharer|drivepro)\.\S+', url)
+    if bool(url1) == True:
+        return bool(url1)
+    elif bool(url) == True:
+        return bool(url)
+    else:
+        return False
+
+def is_udrive_link(url: str):
+    if 'drivehub.ws' in url:
+        return 'drivehub.ws' in url
+    else:
+        url = re_match(r'https?://(hubdrive|katdrive|kolop|drivefire|drivebuzz)\.\S+', url)
+        return bool(url)
+
+def is_sharer_link(url: str):
+    url = re_match(r'https?://(sharer)\.pw/\S+', url)
 
 def is_mega_link(url: str):
     return "mega.nz" in url or "mega.co.nz" in url

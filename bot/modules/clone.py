@@ -58,6 +58,28 @@ def _clone(message, bot, multi=0):
             Thread(target=auto_delete_message, args=(bot, message, message)).start()
             return
 
+    mesg = message.text.split('\n')
+    message_args = mesg[0].split(' ', maxsplit=1)
+    user_id = message.from_user.id
+    tag = f"@{message.from_user.username}"
+    slmsg = f"Added by: {tag} \n👥 User ID: <code>{user_id}</code>\n\n"
+    if LINK_LOGS:
+            try:
+                source_link = message_args[1]
+                for link_log in LINK_LOGS:
+                    bot.sendMessage(link_log, text=slmsg + source_link, parse_mode=ParseMode.HTML )
+            except IndexError:
+                pass
+            if reply_to is not None:
+                try:
+                    reply_text = reply_to.text
+                    if is_url(reply_text):
+                        source_link = reply_text.strip()
+                        for link_log in LINK_LOGS:
+                            bot.sendMessage(chat_id=link_log, text=slmsg + source_link, parse_mode=ParseMode.HTML )
+                except TypeError:
+                    pass  
+
     args = message.text.split()
     reply_to = message.reply_to_message
     link = ''
@@ -79,22 +101,22 @@ def _clone(message, bot, multi=0):
         else:
             tag = reply_to.from_user.mention_html(reply_to.from_user.first_name)
     is_gdtot = is_gdtot_link(link)
-    is_appdrive = is_appdrive_link(link)
-    if is_gdtot:
+    is_unified = is_unified_link(link)
+    is_udrive = is_udrive_link(link)
+    is_sharer = is_sharer_link(link)
+    if (is_gdtot or is_unified or is_udrive or is_sharer):
         try:
             msg = sendMessage(f"Processing: <code>{link}</code>", bot, message)
-            link = gdtot(link)
+            LOGGER.info(f"Processing: {link}")
+            if is_unified:
+                link = unified(link)
+            if is_gdtot:
+                link = gdtot(link)
+            if is_udrive:
+                link = udrive(link)
+            if is_sharer:
+                link = sharer_pw(link)
             LOGGER.info(f"Processing GdToT: {link}")
-            deleteMessage(bot, msg)
-        except DirectDownloadLinkException as e:
-            deleteMessage(bot, msg)
-            return sendMessage(str(e), bot, message)
-    if is_appdrive:
-        msg = sendMessage(f"Processing: <code>{link}</code>", bot, message)
-        try:
-            apdict = appdrive(link)
-            link = apdict.get('gdrive_link')
-            LOGGER.info(f"Processing AppDrive: {link}")
             deleteMessage(bot, msg)
         except DirectDownloadLinkException as e:
             deleteMessage(bot, msg)
@@ -154,12 +176,9 @@ def _clone(message, bot, multi=0):
             msg = sendMarkup(result + cc + pmwarn + logwarn + warnmsg, bot, message, button)
             LOGGER.info(f'Cloning Done: {name}')
             Thread(target=auto_delete_upload_message, args=(bot, message, msg)).start()
-        if is_gdtot:
-            gd.deletefile(link)
-        elif is_appdrive:
-            if apdict.get('link_type') == 'login':
-                LOGGER.info(f"Deleting: {link}")
-                gd.deletefile(link)  
+        if (is_gdtot or is_unified or is_udrive or is_sharer):
+            gd.deletefile(link) 
+
         if MIRROR_LOGS:	
             try:	
                 for chatid in MIRROR_LOGS:	
@@ -173,29 +192,8 @@ def _clone(message, bot, multi=0):
             except Exception as e:	
                 LOGGER.warning(e)	
                 return
-    mesg = message.text.split('\n')
-    message_args = mesg[0].split(' ', maxsplit=1)
-    user_id = message.from_user.id
-    tag = f"@{message.from_user.username}"
-    slmsg = f"Added by: {tag} \n👥 User ID: <code>{user_id}</code>\n\n"
-    if LINK_LOGS:
-            try:
-                source_link = message_args[1]
-                for link_log in LINK_LOGS:
-                    bot.sendMessage(link_log, text=slmsg + source_link, parse_mode=ParseMode.HTML )
-            except IndexError:
-                pass
-            if reply_to is not None:
-                try:
-                    reply_text = reply_to.text
-                    if is_url(reply_text):
-                        source_link = reply_text.strip()
-                        for link_log in LINK_LOGS:
-                            bot.sendMessage(chat_id=link_log, text=slmsg + source_link, parse_mode=ParseMode.HTML )
-                except TypeError:
-                    pass  
     else:
-        return sendMessage(f"Please enter a valid command.\nRead /{BotCommands.HelpCommand} and try again.", bot, message)
+        sendMessage('Send Gdrive or GDToT/AppDrive/DriveApp/GDFlix/DriveBit/DriveLinks/DrivePro/DriveAce/DriveSharer/HubDrive/DriveHub/KatDrive/Kolop/DriveFire/vickyshare/SharerPw link along with command or by replying to the link by command', bot, message)
 
 @new_thread
 def cloneNode(update, context):
