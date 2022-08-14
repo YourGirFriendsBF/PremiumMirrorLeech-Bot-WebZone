@@ -9,7 +9,7 @@ from bot.helper.telegram_helper.message_utils import sendMessage, sendMarkup, de
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.mirror_utils.status_utils.clone_status import CloneStatus
-from bot import dispatcher, LOGGER, CLONE_LIMIT, STOP_DUPLICATE, download_dict, download_dict_lock, Interval, BOT_PM, MIRROR_LOGS, AUTO_DELETE_UPLOAD_MESSAGE_DURATION, CLONE_ENABLED, LINK_LOGS
+from bot import dispatcher, LOGGER, CLONE_LIMIT, STOP_DUPLICATE, download_dict, download_dict_lock, Interval, BOT_PM, MIRROR_LOGS, AUTO_DELETE_UPLOAD_MESSAGE_DURATION, CLONE_ENABLED, LINK_LOGS, EMOJI_THEME
 from bot.helper.ext_utils.bot_utils import *
 from bot.helper.mirror_utils.download_utils.direct_link_generator import *
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
@@ -25,17 +25,26 @@ def _clone(message, bot, multi=0):
         if message.chat.type == 'private':
             warnmsg = ''
         else:
-            warnmsg = f'<b>❗ This message will be deleted in <i>{auto_delete_message} minutes</i> from this group.</b>\n'
+            if EMOJI_THEME is True:
+                warnmsg = f'<b>❗ This message will be deleted in <i>{auto_delete_message} minutes</i> from this group.</b>\n'
+            else:
+                warnmsg = f'<b>This message will be deleted in <i>{auto_delete_message} minutes</i> from this group.</b>\n'
     else:
         warnmsg = ''
     if BOT_PM and message.chat.type != 'private':
-        pmwarn = f"<b>😉I have sent files in PM.</b>\n"
+        if EMOJI_THEME is True:
+            pmwarn = f"<b>😉I have sent files in PM.</b>\n"
+        else:
+            pmwarn = f"<b>I have sent files in PM.</b>\n"
     elif message.chat.type == 'private':
         pmwarn = ''
     else:
         pmwarn = ''
     if MIRROR_LOGS and message.chat.type != 'private':
-        logwarn = f"<b>⚠️ I have sent files in Mirror Log Channel.(Join Mirror Log channel) </b>\n"
+        if EMOJI_THEME is True:
+            logwarn = f"<b>⚠️ I have sent files in Mirror Log Channel.(Join Mirror Log channel) </b>\n"
+        else:
+            logwarn = f"<b>I have sent files in Mirror Log Channel.(Join Mirror Log channel) </b>\n"
     elif message.chat.type == 'private':
         logwarn = ''
     else:
@@ -62,7 +71,10 @@ def _clone(message, bot, multi=0):
     message_args = mesg[0].split(' ', maxsplit=1)
     user_id = message.from_user.id
     tag = f"@{message.from_user.username}"
-    slmsg = f"Added by: {tag} \n👥 User ID: <code>{user_id}</code>\n\n"
+    if EMOJI_THEME is True:
+        slmsg = f"Added by: {tag} \n👥 User ID: <code>{user_id}</code>\n\n"
+    else:
+        slmsg = f"Added by: {tag} \nUser ID: <code>{user_id}</code>\n\n"
     if LINK_LOGS:
             try:
                 source_link = message_args[1]
@@ -169,7 +181,10 @@ def _clone(message, bot, multi=0):
                     update_all_messages()
             except IndexError:
                 pass
-        cc = f'\n<b>╰👤 cc: </b>{tag}\n\n'
+        if EMOJI_THEME is True:
+            cc = f'\n<b>╰👤 cc: </b>{tag}\n\n'
+        else:
+            cc = f'\n<b>╰ cc: </b>{tag}\n\n'
         if button in ["cancelled", ""]:
             sendMessage(f"{tag} {result}", bot, message)
         else:
@@ -193,7 +208,7 @@ def _clone(message, bot, multi=0):
                 LOGGER.warning(e)	
                 return
     else:
-        sendMessage('Send Gdrive or GDToT/AppDrive/DriveApp/GDFlix/DriveBit/DriveLinks/DrivePro/DriveAce/DriveSharer/HubDrive/DriveHub/KatDrive/Kolop/DriveFire/SharerPw link along with command or by replying to the link by command', bot, message)
+        sendMessage('Send Gdrive or GDToT/AppDrive/DriveApp/GDFlix/DriveBit/DriveLinks/DrivePro/DriveAce/DriveSharer/HubDrive/DriveHub/KatDrive/Kolop/DriveFire/vickyshare/SharerPw link along with command or by replying to the link by command', bot, message)
 
 @new_thread
 def cloneNode(update, context):

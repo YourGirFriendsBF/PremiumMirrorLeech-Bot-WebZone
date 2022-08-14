@@ -719,6 +719,11 @@ try:
     IMAGE_URL = getConfig('IMAGE_URL')
 except KeyError:
     IMAGE_URL = 'https://telegra.ph/file/6b22ef7b8a733c5131d3f.jpg'
+try:
+    EMOJI_THEME = getConfig('EMOJI_THEME')
+    EMOJI_THEME = EMOJI_THEME.lower() == 'true'
+except:
+    EMOJI_THEME = False
 
 updater = tgUpdater(token=BOT_TOKEN, request_kwargs={'read_timeout': 20, 'connect_timeout': 15})
 bot = updater.bot

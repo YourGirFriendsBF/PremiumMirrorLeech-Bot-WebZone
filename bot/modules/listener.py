@@ -16,7 +16,7 @@ from bot import bot, Interval, INDEX_URL, BUTTON_FOUR_NAME, BUTTON_FOUR_URL, BUT
                 BUTTON_SIX_NAME, BUTTON_SIX_URL, VIEW_LINK, aria2, dispatcher, DOWNLOAD_DIR, \
                 download_dict, download_dict_lock, TG_SPLIT_SIZE, LOGGER, MEGA_KEY, DB_URI, INCOMPLETE_TASK_NOTIFIER, \
                 LEECH_LOG, BOT_PM, MIRROR_LOGS, SOURCE_LINK, AUTO_DELETE_UPLOAD_MESSAGE_DURATION, \
-                MIRROR_ENABLED, LEECH_ENABLED, WATCH_ENABLED, CLONE_ENABLED, LINK_LOGS
+                MIRROR_ENABLED, LEECH_ENABLED, WATCH_ENABLED, CLONE_ENABLED, LINK_LOGS, EMOJI_THEME
 from bot.helper.ext_utils.bot_utils import is_url, is_magnet, is_gdtot_link, is_mega_link, is_gdrive_link, get_content_type, get_readable_time
 from bot.helper.ext_utils.fs_utils import get_base_name, get_path_size, split_file, clean_download, clean_target
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException, NotSupportedExtractionArchive
@@ -255,30 +255,45 @@ class MirrorLeechListener:
             if self.message.chat.type == 'private':
                 warnmsg = ''
             else:
-                warnmsg = f'<b>❗ This message will be deleted in <i>{auto_delete_message} minutes</i> from this group.</b>\n'
+                if EMOJI_THEME is True:
+                    warnmsg = f'<b>❗ This message will be deleted in <i>{auto_delete_message} minutes</i> from this group.</b>\n'
+                else:
+                    warnmsg = f'<b>This message will be deleted in <i>{auto_delete_message} minutes</i> from this group.</b>\n'
         else:
             warnmsg = ''
         if BOT_PM and self.message.chat.type != 'private':
-            pmwarn = f"<b>😉 I have sent files in PM.</b>\n"
+            if EMOJI_THEME is True:
+                pmwarn = f"<b>😉 I have sent files in PM.</b>\n"
+            else:
+                pmwarn = f"<b>I have sent files in PM.</b>\n"
         elif self.message.chat.type == 'private':
             pmwarn = ''
         else:
             pmwarn = ''
         if MIRROR_LOGS and self.message.chat.type != 'private':
-            logwarn = f"<b>⚠️ I have sent files in Mirror Log Channel.(Join Mirror Log channel) </b>\n"
+            if EMOJI_THEME is True:
+                logwarn = f"<b>⚠️ I have sent files in Mirror Log Channel.(Join Mirror Log channel) </b>\n"
+            else:
+                logwarn = f"<b>I have sent files in Mirror Log Channel.(Join Mirror Log channel) </b>\n"
         elif self.message.chat.type == 'private':
             logwarn = ''
         else:
             logwarn = ''
         if LEECH_LOG and self.message.chat.type != 'private':
-            logleechwarn = f"<b>⚠️ I have sent files in Leech Log Channel.(Join Leech Log channel) </b>\n"
+            if EMOJI_THEME is True:
+                logleechwarn = f"<b>⚠️ I have sent files in Leech Log Channel.(Join Leech Log channel) </b>\n"
+            else:
+                logleechwarn = f"<b>I have sent files in Leech Log Channel.(Join Leech Log channel) </b>\n"
         elif self.message.chat.type == 'private':
             logleechwarn = ''
         else:
             logleechwarn = ''
         if not self.isPrivate and INCOMPLETE_TASK_NOTIFIER and DB_URI is not None:
             DbManger().rm_complete_task(self.message.link)
-        msg = f"<b>╭🗂️ Name: </b><code>{escape(name)}</code>\n<b>├📐 Size: </b>{size}"
+        if EMOJI_THEME is True:
+            msg = f"<b>╭🗂️ Name: </b><code>{escape(name)}</code>\n<b>├📐 Size: </b>{size}"
+        else:
+            msg = f"<b>╭ Name: </b><code>{escape(name)}</code>\n<b>├ Size: </b>{size}"
         if self.isLeech:
             if SOURCE_LINK is True:
                 try:
@@ -316,11 +331,21 @@ class MirrorLeechListener:
                     pass
             else:
                 pass
-            msg += f'\n<b>├📚 Total Files: </b>{folders}'
+            if EMOJI_THEME is True:
+                msg += f'\n<b>├📚 Total Files: </b>{folders}'
+            else:
+                msg += f'\n<b>├ Total Files: </b>{folders}'
             if typ != 0:
-                msg += f'\n<b>├💀 Corrupted Files: </b>{typ}'
-            msg += f'\n<b>├⌛ It Tooks:</b> {get_readable_time(time() - self.message.date.timestamp())}'
-            msg += f'\n<b>╰👤 cc: </b>{self.tag}\n\n'
+                if EMOJI_THEME is True:
+                    msg += f'\n<b>├💀 Corrupted Files: </b>{typ}'
+                else:
+                    msg += f'\n<b>├ Corrupted Files: </b>{typ}'
+            if EMOJI_THEME is True:
+                msg += f'\n<b>├⌛ It Tooks:</b> {get_readable_time(time() - self.message.date.timestamp())}'
+                msg += f'\n<b>╰👤 cc: </b>{self.tag}\n\n'
+            else: 
+                msg += f'\n<b>├ It Tooks:</b> {get_readable_time(time() - self.message.date.timestamp())}'
+                msg += f'\n<b>╰ cc: </b>{self.tag}\n\n'
             if LEECH_LOG:
                 for i in LEECH_LOG:
                     indexmsg = ''
@@ -361,12 +386,23 @@ class MirrorLeechListener:
                     clean_target(self.newDir)
                 return			   			  
         else:
-            msg += f'\n<b>├📦 Type: </b>{typ}'
+            if EMOJI_THEME is True:
+                msg += f'\n<b>├📦 Type: </b>{typ}'
+            else:
+                msg += f'\n<b>├ Type: </b>{typ}'
             if typ == "Folder":
-                msg += f'\n<b>├🗃️ SubFolders: </b>{folders}'
-                msg += f'\n<b>├🗂️ Files: </b>{files}'
-            msg += f'\n<b>├⌛ It Tooks:</b> {get_readable_time(time() - self.message.date.timestamp())}'
-            msg += f'\n<b>╰👤 cc: </b>{self.tag}\n\n'
+                if EMOJI_THEME is True:
+                    msg += f'\n<b>├🗃️ SubFolders: </b>{folders}'
+                    msg += f'\n<b>├🗂️ Files: </b>{files}'
+                else:
+                    msg += f'\n<b>├ SubFolders: </b>{folders}'
+                    msg += f'\n<b>├ Files: </b>{files}'
+            if EMOJI_THEME is True:
+                msg += f'\n<b>├⌛ It Tooks:</b> {get_readable_time(time() - self.message.date.timestamp())}'
+                msg += f'\n<b>╰👤 cc: </b>{self.tag}\n\n'
+            else:
+                msg += f'\n<b>├ It Tooks:</b> {get_readable_time(time() - self.message.date.timestamp())}'
+                msg += f'\n<b>╰ cc: </b>{self.tag}\n\n'
             buttons = ButtonMaker()
             link = short_url(link)
             buttons.buildbutton("☁️ Drive Link", link)
