@@ -15,9 +15,10 @@ from googleapiclient.errors import HttpError, Error as GCError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 from telegram import InlineKeyboardMarkup
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type, RetryError
+from bot.helper.ext_utils.html_helper import hmtl_content
 
 from bot.helper.telegram_helper.button_build import ButtonMaker
-from bot import parent_id, IS_TEAM_DRIVE, INDEX_URL, USE_SERVICE_ACCOUNTS, BUTTON_FOUR_NAME, \
+from bot import TELEGRAPH_STYLE, parent_id, IS_TEAM_DRIVE, INDEX_URL, USE_SERVICE_ACCOUNTS, BUTTON_FOUR_NAME, \
                 BUTTON_FOUR_URL, BUTTON_FIVE_NAME, BUTTON_FIVE_URL, BUTTON_SIX_NAME, BUTTON_SIX_URL, VIEW_LINK, \
                 DRIVES_NAMES, DRIVES_IDS, INDEX_URLS, EXTENSION_FILTER, SOURCE_LINK, TITLE_NAME, GD_INFO, EMOJI_THEME
 from bot.helper.ext_utils.telegraph_helper import telegraph
@@ -599,95 +600,175 @@ class GoogleDriveHelper:
             return {'files': []}
 
     def drive_list(self, fileName, stopDup=False, noMulti=False, isRecursive=True, itemType=""):
-        msg = ""
-        fileName = self.__escapes(str(fileName))
-        contents_count = 0
-        telegraph_content = []
-        path = []
-        Title = False
-        if len(DRIVES_IDS) > 1:
-            token_service = self.__alt_authorize()
-            if token_service is not None:
-                self.__service = token_service
-        for index, parent_id in enumerate(DRIVES_IDS):
-            isRecur = False if isRecursive and len(parent_id) > 23 else isRecursive
-            response = self.__drive_query(parent_id, fileName, stopDup, isRecur, itemType)
-            if not response["files"]:
+        if TELEGRAPH_STYLE is True:
+
+            msg = ""
+            fileName = self.__escapes(str(fileName))
+            contents_count = 0
+            telegraph_content = []
+            path = []
+            Title = False
+            if len(DRIVES_IDS) > 1:
+                token_service = self.__alt_authorize()
+                if token_service is not None:
+                    self.__service = token_service
+            for index, parent_id in enumerate(DRIVES_IDS):
+                isRecur = False if isRecursive and len(parent_id) > 23 else isRecursive
+                response = self.__drive_query(parent_id, fileName, stopDup, isRecur, itemType)
+                if not response["files"]:
+                    if noMulti:
+                        break
+                    else:
+                        continue
+                if not Title:
+                    msg += f'<h4>Search Result For {fileName}</h4>'
+                    Title = True
+                if len(DRIVES_NAMES) > 1 and DRIVES_NAMES[index] is not None:
+                    msg += f"╾────────────╼<br><b>{DRIVES_NAMES[index]}</b><br>╾────────────╼<br>"
+                for file in response.get('files', []):
+                    mime_type = file.get('mimeType')
+                    if mime_type == "application/vnd.google-apps.folder":
+                        furl = f"https://drive.google.com/drive/folders/{file.get('id')}"
+                        msg += f"📁 <code>{file.get('name')}<br>(folder)</code><br>"
+                        furl = short_url(furl)
+                        msg += f"<b><a href={furl}>Drive Link</a></b>"
+                        if INDEX_URLS[index] is not None:
+                            if isRecur:
+                                url_path = "/".join([rquote(n, safe='') for n in self.__get_recursive_list(file, parent_id)])
+                            else:
+                                url_path = rquote(f'{file.get("name")}', safe='')
+                            url = f'{INDEX_URLS[index]}/{url_path}/'
+                            url = short_url(url)
+                            msg += f' <b>| <a href="{url}">Index Link</a></b>'
+                    elif mime_type == 'application/vnd.google-apps.shortcut':
+                        msg += f"⁍<a href='https://drive.google.com/drive/folders/{file.get('id')}'>{file.get('name')}" \
+                            f"</a> (shortcut)"
+                        # Excluded index link as indexes cant download or open these shortcuts
+                    else:
+                        furl = f"https://drive.google.com/uc?id={file.get('id')}&export=download"
+                        msg += f"📄 <code>{file.get('name')}<br>({get_readable_file_size(int(file.get('size', 0)))})</code><br>"
+                        furl = short_url(furl)
+                        msg += f"<b><a href={furl}>Drive Link</a></b>"
+                        if INDEX_URLS[index] is not None:
+                            if isRecur:
+                                url_path = "/".join(rquote(n, safe='') for n in self.__get_recursive_list(file, parent_id))
+
+                            else:
+                                url_path = rquote(f'{file.get("name")}')
+                            url = f'{INDEX_URLS[index]}/{url_path}'
+                            url = short_url(url)
+                            msg += f' <b>| <a href="{url}">Index Link</a></b>'
+                            if VIEW_LINK:
+                                urls = f'{INDEX_URLS[index]}/{url_path}?a=view'
+                                urls = short_url(urls)
+                                msg += f' <b>| <a href="{urls}">View Link</a></b>'
+                    msg += '<br><br>'
+                    contents_count += 1
+                    if len(msg.encode('utf-8')) > 39000:
+                        telegraph_content.append(msg)
+                        msg = ""
                 if noMulti:
                     break
-                else:
-                    continue
-            if not Title:
-                msg += f'<h4>Search Result For {fileName}</h4>'
-                Title = True
-            if len(DRIVES_NAMES) > 1 and DRIVES_NAMES[index] is not None:
-                msg += f"╾────────────╼<br><b>{DRIVES_NAMES[index]}</b><br>╾────────────╼<br>"
-            for file in response.get('files', []):
-                mime_type = file.get('mimeType')
-                if mime_type == "application/vnd.google-apps.folder":
-                    furl = f"https://drive.google.com/drive/folders/{file.get('id')}"
-                    msg += f"📁 <code>{file.get('name')}<br>(folder)</code><br>"
-                    furl = short_url(furl)
-                    msg += f"<b><a href={furl}>Drive Link</a></b>"
-                    if INDEX_URLS[index] is not None:
-                        if isRecur:
-                            url_path = "/".join([rquote(n, safe='') for n in self.__get_recursive_list(file, parent_id)])
-                        else:
-                            url_path = rquote(f'{file.get("name")}', safe='')
-                        url = f'{INDEX_URLS[index]}/{url_path}/'
-                        url = short_url(url)
-                        msg += f' <b>| <a href="{url}">Index Link</a></b>'
-                elif mime_type == 'application/vnd.google-apps.shortcut':
-                    msg += f"⁍<a href='https://drive.google.com/drive/folders/{file.get('id')}'>{file.get('name')}" \
-                        f"</a> (shortcut)"
-                    # Excluded index link as indexes cant download or open these shortcuts
-                else:
-                    furl = f"https://drive.google.com/uc?id={file.get('id')}&export=download"
-                    msg += f"📄 <code>{file.get('name')}<br>({get_readable_file_size(int(file.get('size', 0)))})</code><br>"
-                    furl = short_url(furl)
-                    msg += f"<b><a href={furl}>Drive Link</a></b>"
-                    if INDEX_URLS[index] is not None:
-                        if isRecur:
-                            url_path = "/".join(rquote(n, safe='') for n in self.__get_recursive_list(file, parent_id))
 
-                        else:
-                            url_path = rquote(f'{file.get("name")}')
-                        url = f'{INDEX_URLS[index]}/{url_path}'
-                        url = short_url(url)
-                        msg += f' <b>| <a href="{url}">Index Link</a></b>'
-                        if VIEW_LINK:
-                            urls = f'{INDEX_URLS[index]}/{url_path}?a=view'
-                            urls = short_url(urls)
-                            msg += f' <b>| <a href="{urls}">View Link</a></b>'
-                msg += '<br><br>'
-                contents_count += 1
-                if len(msg.encode('utf-8')) > 39000:
-                    telegraph_content.append(msg)
-                    msg = ""
-            if noMulti:
-                break
+            if msg != '':
+                telegraph_content.append(msg)
 
-        if msg != '':
-            telegraph_content.append(msg)
+            if len(telegraph_content) == 0:
+                return "", None
 
-        if len(telegraph_content) == 0:
-            return "", None
+            for content in telegraph_content:
+                path.append(
+                    telegraph.create_page(
+                        title = f'{TITLE_NAME}',
+                        content=content
+                    )["path"]
+                )
+            if len(path) > 1:
+                telegraph.edit_telegraph(path, telegraph_content)
 
-        for content in telegraph_content:
-            path.append(
-                telegraph.create_page(
-                    title = f'{TITLE_NAME}',
-                    content=content
-                )["path"]
-            )
-        if len(path) > 1:
-            telegraph.edit_telegraph(path, telegraph_content)
+            msg = f"<b>Found {contents_count} result for <i>{fileName}</i></b>"
+            buttons = ButtonMaker()
+            buttons.buildbutton("🔎 VIEW", f"https://graph.org/{path[0]}")
 
-        msg = f"<b>Found {contents_count} result for <i>{fileName}</i></b>"
-        buttons = ButtonMaker()
-        buttons.buildbutton("🔎 VIEW", f"https://telegra.ph/{path[0]}")
+            return msg, InlineKeyboardMarkup(buttons.build_menu(1))
 
-        return msg, InlineKeyboardMarkup(buttons.build_menu(1))
+        else:
+
+            msg = ""
+            fileName = self.__escapes(str(fileName))
+            contents_count = 0
+            Title = False
+            if len(DRIVES_IDS) > 1:
+                token_service = self.__alt_authorize()
+                if token_service is not None:
+                    self.__service = token_service
+            for index, parent_id in enumerate(DRIVES_IDS):
+                isRecur = False if isRecursive and len(parent_id) > 23 else isRecursive
+                response = self.__drive_query(parent_id, fileName, stopDup, isRecur, itemType)
+                if not response["files"]:
+                    if noMulti:
+                        break
+                    else:
+                        continue
+                if not Title:
+                    msg += '<span class="container center rfontsize">' \
+                          f'<h4>Search Result For {fileName}</h4></span>'
+                    Title = True
+                if len(DRIVES_NAMES) > 1 and DRIVES_NAMES[index] is not None:
+                    msg += '<span class="container center rfontsize">' \
+                          f'<b>{DRIVES_NAMES[index]}</b></span>'
+                for file in response.get('files', []):
+                    mime_type = file.get('mimeType')
+                    if mime_type == "application/vnd.google-apps.folder":
+                        furl = f"https://drive.google.com/drive/folders/{file.get('id')}"
+                        msg += '<span class="container start rfontsize">' \
+                              f"<div>📁 {file.get('name')} (folder)</div>" \
+                               '<div class="dlinks">' \
+                              f'<span> <a class="forhover" href="{furl}">Drive Link</a></span>'
+                        if INDEX_URLS[index] is not None:
+                            if isRecur:
+                                url_path = "/".join([rquote(n, safe='') for n in self.__get_recursive_list(file, parent_id)])
+                            else:
+                                url_path = rquote(f'{file.get("name")}', safe='')
+                            url = f'{INDEX_URLS[index]}/{url_path}/'
+                            msg += '<span> | </span>' \
+                                  f'<span> <a class="forhover" href="{url}">Index Link</a></span>'
+                    elif mime_type == 'application/vnd.google-apps.shortcut':
+                        furl = f"https://drive.google.com/drive/folders/{file.get('id')}"
+                        msg += '<span class="container start rfontsize">' \
+                              f"<div>📁 {file.get('name')} (shortcut)</div>" \
+                               '<div class="dlinks">' \
+                              f'<span> <a class="forhover" href="{furl}">Drive Link</a></span>'\
+                               '</div></span>'
+                    else:
+                        furl = f"https://drive.google.com/uc?id={file.get('id')}&export=download"
+                        msg += '<span class="container start rfontsize">' \
+                              f"<div>📄 {file.get('name')} ({get_readable_file_size(int(file.get('size', 0)))})</div>" \
+                               '<div class="dlinks">' \
+                              f'<span> <a class="forhover" href="{furl}">Drive Link</a></span>'
+                        if INDEX_URLS[index] is not None:
+                            if isRecur:
+                                url_path = "/".join(rquote(n, safe='') for n in self.__get_recursive_list(file, parent_id))
+                            else:
+                                url_path = rquote(f'{file.get("name")}')
+                            url = f'{INDEX_URLS[index]}/{url_path}'
+                            msg += '<span> | </span>' \
+                                  f'<span> <a class="forhover" href="{url}">Index Link</a></span>'
+                            if VIEW_LINK:
+                                urlv = f'{INDEX_URLS[index]}/{url_path}?a=view'
+                                msg += '<span> | </span>' \
+                                      f'<span> <a class="forhover" href="{urlv}">View Link</a></span>'
+                    msg += '</div></span>'
+                    contents_count += 1
+                if noMulti:
+                    break
+            if contents_count == 0:
+                return "", ""
+            cap = f"<b>Found {contents_count} result for <i>{fileName}</i></b>"
+            f_name = f'{fileName}_{time()}.html'
+            with open(f_name, 'w', encoding='utf-8') as f:
+                f.write(hmtl_content.replace('{fileName}', fileName).replace('{msg}', msg))
+            return cap, f_name    
 
     def count(self, link):
         try:

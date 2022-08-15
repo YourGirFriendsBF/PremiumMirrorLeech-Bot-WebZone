@@ -109,7 +109,7 @@ def getHerokuDetails(h_api_key, h_app_name):
 
 
 
-IMAGE_X = "https://telegra.ph/file/9c2c7250397f4ed2eed20.jpg"
+IMAGE_X = "https://graph.org/file/9c2c7250397f4ed2eed20.jpg"
 
 now=datetime.now(pytz.timezone(f'{TIMEZONE}'))
 
@@ -388,11 +388,11 @@ help_admin = telegraph.create_page(
 def bot_help(update, context):
     button = ButtonMaker()
     if EMOJI_THEME is True:
-        button.buildbutton("👤 User", f"https://telegra.ph/{help_user}")
-        button.buildbutton("🛡️ Admin", f"https://telegra.ph/{help_admin}")
+        button.buildbutton("👤 User", f"https://graph.org/{help_user}")
+        button.buildbutton("🛡️ Admin", f"https://graph.org/{help_admin}")
     else:
-        button.buildbutton("User", f"https://telegra.ph/{help_user}")
-        button.buildbutton("Admin", f"https://telegra.ph/{help_admin}")
+        button.buildbutton("User", f"https://graph.org/{help_user}")
+        button.buildbutton("Admin", f"https://graph.org/{help_admin}")
     sendMarkup(help_string, context.bot, update.message, InlineKeyboardMarkup(button.build_menu(2)))
 
        
@@ -462,7 +462,7 @@ def main():
                          msg += f" <a href='{link}'>{index}</a> |"
                          if len(msg.encode()) > 4000:
                              if '😎Restarted successfully❗' in msg and cid == chat_id:
-                                 bot.editMessageText(msg, chat_id, msg_id, parse_mode='HTMl', disable_web_page_preview=True)
+                                 bot.editMessageText(msg, chat_id, msg_id, parse_mode='HTML', disable_web_page_preview=True)
                                  osremove(".restartmsg")
                              else:
                                  try:
@@ -471,7 +471,7 @@ def main():
                                      LOGGER.error(e)
                              msg = ''
                 if '😎Restarted successfully❗' in msg and cid == chat_id:
-                     bot.editMessageText(msg, chat_id, msg_id, parse_mode='HTMl', disable_web_page_preview=True)
+                     bot.editMessageText(msg, chat_id, msg_id, parse_mode='HTML', disable_web_page_preview=True)
                      osremove(".restartmsg")
                 else:
                     try:

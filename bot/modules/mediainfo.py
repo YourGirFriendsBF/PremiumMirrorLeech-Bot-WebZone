@@ -58,7 +58,7 @@ def mediainfo(update, context):
     try: os.remove(file)
     except: pass
     help = telegraph.create_page(title='MediaInfo', content=reply)["path"]
-    editMessage(short_url(f"https://telegra.ph/{help}"), sent)
+    editMessage(short_url(f"https://graph.org/{help}"), sent)
 
 if MEDIAINFO_ENABLED:
     mediainfo_handler = CommandHandler(BotCommands.MediaInfoCommand, mediainfo,

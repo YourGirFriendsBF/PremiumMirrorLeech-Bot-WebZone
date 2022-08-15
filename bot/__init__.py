@@ -718,12 +718,17 @@ except:
 try:
     IMAGE_URL = getConfig('IMAGE_URL')
 except KeyError:
-    IMAGE_URL = 'https://telegra.ph/file/6b22ef7b8a733c5131d3f.jpg'
+    IMAGE_URL = 'https://graph.org/file/6b22ef7b8a733c5131d3f.jpg'
 try:
     EMOJI_THEME = getConfig('EMOJI_THEME')
     EMOJI_THEME = EMOJI_THEME.lower() == 'true'
 except:
     EMOJI_THEME = False
+try:
+    TELEGRAPH_STYLE = getConfig('TELEGRAPH_STYLE')
+    TELEGRAPH_STYLE = TELEGRAPH_STYLE.lower() == 'true'
+except:
+    TELEGRAPH_STYLE = False
 
 updater = tgUpdater(token=BOT_TOKEN, request_kwargs={'read_timeout': 20, 'connect_timeout': 15})
 bot = updater.bot

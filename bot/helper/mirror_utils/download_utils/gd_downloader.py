@@ -1,10 +1,9 @@
 from random import SystemRandom
 from string import ascii_letters, digits
-
-from bot import download_dict, download_dict_lock, ZIP_UNZIP_LIMIT, LOGGER, STOP_DUPLICATE, STORAGE_THRESHOLD, TORRENT_DIRECT_LIMIT
+from bot import TELEGRAPH_STYLE, download_dict, download_dict_lock, ZIP_UNZIP_LIMIT, LOGGER, STOP_DUPLICATE, STORAGE_THRESHOLD, TORRENT_DIRECT_LIMIT
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
 from bot.helper.mirror_utils.status_utils.gd_download_status import GdDownloadStatus
-from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage, sendMarkup
+from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage, sendMarkup, sendFile
 from bot.helper.ext_utils.bot_utils import get_readable_file_size
 from bot.helper.ext_utils.fs_utils import get_base_name, check_storage_threshold
 
@@ -25,10 +24,18 @@ def add_gd_download(link, path, listener, is_gdtot, is_unified, is_udrive, is_sh
             except:
                 gname = None
         if gname is not None:
-            gmsg, button = GoogleDriveHelper().drive_list(gname, True)
-            if gmsg:
-                msg = "File/Folder is already available in Drive.\nHere are the search results:"
-                return sendMarkup(msg, listener.bot, listener.message, button)
+            if TELEGRAPH_STYLE is True:
+                gmsg, button = GoogleDriveHelper().drive_list(gname, True)
+                if gmsg:
+                    msg = "File/Folder is already available in Drive.\nHere are the search results:"
+                    return sendMarkup(msg, listener.bot, listener.message, button)
+
+            else:
+                cap, f_name = GoogleDriveHelper().drive_list(gname, True)
+                if cap:
+                    cap = f"File/Folder is already available in Drive. Here are the search results:\n\n{cap}"
+                    sendFile(listener.bot, listener.message, f_name, cap)
+                    return
     if any([ZIP_UNZIP_LIMIT, STORAGE_THRESHOLD, TORRENT_DIRECT_LIMIT]):
         arch = any([listener.extract, listener.isZip])
         limit = None
