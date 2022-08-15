@@ -67,6 +67,27 @@ def _clone(message, bot, multi=0):
             Thread(target=auto_delete_message, args=(bot, message, message)).start()
             return
 
+    args = message.text.split()
+    reply_to = message.reply_to_message
+    link = ''
+
+    if len(args) > 1:
+        link = args[1].strip()
+        if link.strip().isdigit():
+            multi = int(link)
+            link = ''
+        elif message.from_user.username:
+            tag = f"@{message.from_user.username}"
+        else:
+            tag = message.from_user.mention_html(message.from_user.first_name)
+    if reply_to:
+        if len(link) == 0:
+            link = reply_to.text.split(maxsplit=1)[0].strip()
+        if reply_to.from_user.username:
+            tag = f"@{reply_to.from_user.username}"
+        else:
+            tag = reply_to.from_user.mention_html(reply_to.from_user.first_name)
+    
     mesg = message.text.split('\n')
     message_args = mesg[0].split(' ', maxsplit=1)
     user_id = message.from_user.id
@@ -92,26 +113,6 @@ def _clone(message, bot, multi=0):
                 except TypeError:
                     pass  
 
-    args = message.text.split()
-    reply_to = message.reply_to_message
-    link = ''
-
-    if len(args) > 1:
-        link = args[1].strip()
-        if link.strip().isdigit():
-            multi = int(link)
-            link = ''
-        elif message.from_user.username:
-            tag = f"@{message.from_user.username}"
-        else:
-            tag = message.from_user.mention_html(message.from_user.first_name)
-    if reply_to:
-        if len(link) == 0:
-            link = reply_to.text.split(maxsplit=1)[0].strip()
-        if reply_to.from_user.username:
-            tag = f"@{reply_to.from_user.username}"
-        else:
-            tag = reply_to.from_user.mention_html(reply_to.from_user.first_name)
     is_gdtot = is_gdtot_link(link)
     is_unified = is_unified_link(link)
     is_udrive = is_udrive_link(link)
@@ -214,6 +215,8 @@ def _clone(message, bot, multi=0):
             except Exception as e:	
                 LOGGER.warning(e)	
                 return
+
+
     else:
         sendMessage('Send Gdrive or GDToT/AppDrive/DriveApp/GDFlix/DriveBit/DriveLinks/DrivePro/DriveAce/DriveSharer/HubDrive/DriveHub/KatDrive/Kolop/DriveFire/vickyshare/SharerPw link along with command or by replying to the link by command', bot, message)
 
