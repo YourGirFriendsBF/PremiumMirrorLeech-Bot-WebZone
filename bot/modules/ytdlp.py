@@ -4,13 +4,14 @@ from telegram import InlineKeyboardMarkup
 from time import sleep
 from re import split as re_split
 
-from bot import DOWNLOAD_DIR, dispatcher, BOT_PM, LOGGER, WATCH_ENABLED
+from bot import *
 from bot.helper.telegram_helper.message_utils import sendMessage, sendMarkup, editMessage, auto_delete_upload_message
 from bot.helper.ext_utils.bot_utils import get_readable_file_size, is_url
 from bot.helper.mirror_utils.download_utils.youtube_dl_download_helper import YoutubeDLHelper
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.button_build import ButtonMaker
+from telegram import InlineKeyboardMarkup, ParseMode, InlineKeyboardButton
 from .listener import MirrorLeechListener
 
 listener_dict = {}
@@ -19,7 +20,24 @@ def _ytdl(bot, message, isZip=False, isLeech=False, multi=0):
     mssg = message.text
     user_id = message.from_user.id
     msg_id = message.message_id
-    buttons = ButtonMaker()
+    buttons = ButtonMaker()	
+    if FSUB:
+        try:
+            uname = message.from_user.mention_html(
+                message.from_user.first_name)
+            user = bot.get_chat_member(FSUB_CHANNEL_ID, message.from_user.id)
+            if user.status not in ['member', 'creator', 'administrator']:
+                buttons.buildbutton(
+                    f"{CHANNEL_USERNAME}",
+                    f"https://t.me/{CHANNEL_USERNAME}")
+                reply_markup = InlineKeyboardMarkup(buttons.build_menu(1))
+                return sendMarkup(
+                    f"<b>🙋 Dear {uname}️,\n\nI found that you haven't joined our Updates Channel yet.\n\nJoin and Use Bots Without Restrictions.</b>",
+                    bot,
+                    message,
+                    reply_markup)
+        except Exception as e:
+            LOGGER.info(str(e))
     if BOT_PM and message.chat.type != 'private':
         try:
             msg1 = f'Added your Requested link to Download\n'

@@ -9,7 +9,7 @@ from bot.helper.telegram_helper.message_utils import sendMessage, sendMarkup, de
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.mirror_utils.status_utils.clone_status import CloneStatus
-from bot import TELEGRAPH_STYLE, dispatcher, LOGGER, CLONE_LIMIT, STOP_DUPLICATE, download_dict, download_dict_lock, Interval, BOT_PM, MIRROR_LOGS, AUTO_DELETE_UPLOAD_MESSAGE_DURATION, CLONE_ENABLED, LINK_LOGS, EMOJI_THEME
+from bot import *
 from bot.helper.ext_utils.bot_utils import *
 from bot.helper.mirror_utils.download_utils.direct_link_generator import *
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
@@ -49,7 +49,24 @@ def _clone(message, bot, multi=0):
         logwarn = ''
     else:
         logwarn = ''
-    buttons = ButtonMaker()
+    buttons = ButtonMaker()	
+    if FSUB:
+        try:
+            uname = message.from_user.mention_html(
+                message.from_user.first_name)
+            user = bot.get_chat_member(FSUB_CHANNEL_ID, message.from_user.id)
+            if user.status not in ['member', 'creator', 'administrator']:
+                buttons.buildbutton(
+                    f"{CHANNEL_USERNAME}",
+                    f"https://t.me/{CHANNEL_USERNAME}")
+                reply_markup = InlineKeyboardMarkup(buttons.build_menu(1))
+                return sendMarkup(
+                    f"<b>🙋 Dear {uname}️,\n\nI found that you haven't joined our Updates Channel yet.\n\nJoin and Use Bots Without Restrictions.</b>",
+                    bot,
+                    message,
+                    reply_markup)
+        except Exception as e:
+            LOGGER.info(str(e))
     if BOT_PM:
         try:
             msg1 = f'Added your Requested link to Download\n'
