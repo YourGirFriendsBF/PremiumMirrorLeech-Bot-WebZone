@@ -346,6 +346,15 @@ class MirrorLeechListener:
             else: 
                 msg += f'\n<b>├ It Tooks:</b> {get_readable_time(time() - self.message.date.timestamp())}'
                 msg += f'\n<b>╰ cc: </b>{self.tag}\n\n'
+            if BOT_PM and self.message.chat.type != 'private':	
+                bot_d = bot.get_me()	
+                b_uname = bot_d.username	
+                botstart = f"http://t.me/{b_uname}"	
+                buttons.buildbutton("View file in PM", f"{botstart}")
+            elif self.message.chat.type == 'private':
+                botstart = ''
+            else:
+                botstart = ''
             if LEECH_LOG:
                 for i in LEECH_LOG:
                     indexmsg = ''
@@ -354,22 +363,16 @@ class MirrorLeechListener:
                         if len(indexmsg.encode() + msg.encode()) > 4000:
                             sleep(1.5)
                             bot.sendMessage(chat_id=i, text=msg + indexmsg,
-                                            reply_markup=InlineKeyboardMarkup(buttons.build_menu(1)),
+                                            reply_markup=InlineKeyboardMarkup(buttons.build_menu(2)),
                                             parse_mode=ParseMode.HTML)
                             indexmsg = ''
                     if indexmsg != '':
                         sleep(1.5)
                         bot.sendMessage(chat_id=i, text=msg + indexmsg,
-                                        reply_markup=InlineKeyboardMarkup(buttons.build_menu(1)),
+                                        reply_markup=InlineKeyboardMarkup(buttons.build_menu(2)),
                                         parse_mode=ParseMode.HTML)
-
-            if BOT_PM:	
-                bot_d = bot.get_me()	
-                b_uname = bot_d.username	
-                botstart = f"http://t.me/{b_uname}"	
-                buttons.buildbutton("View file in PM", f"{botstart}")
             if not files:
-                uploadmsg = sendMessage(msg, self.bot, self.message)
+                uploadmsg = sendMarkup(msg, self.bot, self.message, InlineKeyboardMarkup(buttons.build_menu(2)))
             else:
                 fmsg = ''
                 for index, (link, name) in enumerate(files.items(), start=1):
@@ -381,6 +384,7 @@ class MirrorLeechListener:
                 if fmsg != '':
                     uploadmsg = sendMarkup(msg + fmsg + pmwarn + logleechwarn + warnmsg, self.bot, self.message, InlineKeyboardMarkup(buttons.build_menu(2)))
                     Thread(target=auto_delete_upload_message, args=(bot, self.message, uploadmsg)).start()
+
             if self.seed:
                 if self.newDir:
                     clean_target(self.newDir)
@@ -421,11 +425,15 @@ class MirrorLeechListener:
                         share_urls = f'{INDEX_URL}/{url_path}?a=view'
                         share_urls = short_url(share_urls)
                         buttons.buildbutton("🌐 View Link", share_urls)
-                    if BOT_PM:	
+                    if BOT_PM and self.message.chat.type != 'private':	
                         bot_d = bot.get_me()	
                         b_uname = bot_d.username	
                         botstart = f"http://t.me/{b_uname}"	
                         buttons.buildbutton("View file in PM", f"{botstart}")
+                    elif self.message.chat.type == 'private':
+                        botstart = ''
+                    else:
+                        botstart = ''
             if BUTTON_FOUR_NAME is not None and BUTTON_FOUR_URL is not None:
                 buttons.buildbutton(f"{BUTTON_FOUR_NAME}", f"{BUTTON_FOUR_URL}")
             if BUTTON_FIVE_NAME is not None and BUTTON_FIVE_URL is not None:
@@ -451,25 +459,26 @@ class MirrorLeechListener:
                         pass
                 except Exception:
                     pass
-            if reply_to is not None:
-                try:
-                    reply_text = reply_to.text
-                    if is_url(reply_text):
-                        source_link = reply_text.strip()
-                        if is_magnet(source_link):
-                            link = telegraph.create_page(
-                                title='WeebZone Source Link',
-                                content=source_link,
-                            )["path"]
-                            buttons.buildbutton(f"🔗 Source Link", f"https://graph.org/{link}")
-                        else:
-                            buttons.buildbutton(f"🔗 Source Link", source_link)
-                except Exception:
-                    pass
+                if reply_to is not None:
+                    try:
+                        reply_text = reply_to.text
+                        if is_url(reply_text):
+                            source_link = reply_text.strip()
+                            if is_magnet(source_link):
+                                link = telegraph.create_page(
+                                    title='WeebZone Source Link',
+                                    content=source_link,
+                                )["path"]
+                                buttons.buildbutton(f"🔗 Source Link", f"https://graph.org/{link}")
+                            else:
+                                buttons.buildbutton(f"🔗 Source Link", source_link)
+                    except Exception:
+                        pass
             else:
                 pass
             uploadmsg = sendMarkup(msg + pmwarn + logwarn + warnmsg, self.bot, self.message, InlineKeyboardMarkup(buttons.build_menu(2)))
             Thread(target=auto_delete_upload_message, args=(bot, self.message, uploadmsg)).start()
+            
             if MIRROR_LOGS:	
                 try:	
                     for chatid in MIRROR_LOGS:	
