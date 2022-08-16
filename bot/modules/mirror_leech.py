@@ -7,7 +7,7 @@ from threading import Thread
 from subprocess import run as srun
 from pathlib import PurePath
 from telegram.ext import CommandHandler
-
+from telegram import InlineKeyboardMarkup, ParseMode, InlineKeyboardButton
 
 from bot import bot, Interval, INDEX_URL, BUTTON_FOUR_NAME, BUTTON_FOUR_URL, BUTTON_FIVE_NAME, BUTTON_FIVE_URL, \
                 BUTTON_SIX_NAME, BUTTON_SIX_URL, VIEW_LINK, aria2, dispatcher, DOWNLOAD_DIR, \
