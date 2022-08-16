@@ -376,7 +376,7 @@ class MirrorLeechListener:
             else:
                 fmsg = ''
                 for index, (link, name) in enumerate(files.items(), start=1):
-                    fmsg += f"{index}. <a href='{link}'>{name}</a>\n\n"
+                    fmsg += f"{index}. <a href='{link}'>{name}</a>\n"
                     if len(fmsg.encode() + msg.encode()) > 4000:
                         uploadmsg = sendMarkup(msg + fmsg + pmwarn + logleechwarn + warnmsg, self.bot, self.message, InlineKeyboardMarkup(buttons.build_menu(2)))
                         sleep(1)
