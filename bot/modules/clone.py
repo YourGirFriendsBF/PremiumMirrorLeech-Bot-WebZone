@@ -1,11 +1,12 @@
 from random import SystemRandom
+from pyrogram import enums
 from string import ascii_letters, digits
 from telegram.ext import CommandHandler
 from threading import Thread
 from time import sleep
 
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
-from bot.helper.telegram_helper.message_utils import sendMessage, sendMarkup, deleteMessage, delete_all_messages, update_all_messages, sendStatusMessage, auto_delete_upload_message, sendFile
+from bot.helper.telegram_helper.message_utils import sendMessage, sendMarkup, deleteMessage, delete_all_messages, update_all_messages, sendStatusMessage, auto_delete_upload_message, auto_delete_message, sendFile
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.mirror_utils.status_utils.clone_status import CloneStatus
@@ -16,7 +17,7 @@ from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from telegram import InlineKeyboardMarkup, ParseMode
 from bot.helper.telegram_helper.button_build import ButtonMaker
 
-def _clone(message, bot, multi=0):
+def _clone(message, bot):
     if AUTO_DELETE_UPLOAD_MESSAGE_DURATION != -1:
         reply_to = message.reply_to_message
         if reply_to is not None:
@@ -52,21 +53,22 @@ def _clone(message, bot, multi=0):
     buttons = ButtonMaker()	
     if FSUB:
         try:
-            uname = message.from_user.mention_html(
-                message.from_user.first_name)
-            user = bot.get_chat_member(FSUB_CHANNEL_ID, message.from_user.id)
-            if user.status not in ['member', 'creator', 'administrator']:
-                buttons.buildbutton(
-                    f"{CHANNEL_USERNAME}",
-                    f"https://t.me/{CHANNEL_USERNAME}")
-                reply_markup = InlineKeyboardMarkup(buttons.build_menu(1))
-                return sendMarkup(
-                    f"<b>🙋 Dear {uname}️,\n\nI found that you haven't joined our Updates Channel yet.\n\nJoin and Use Bots Without Restrictions.</b>",
-                    bot,
-                    message,
-                    reply_markup)
-        except Exception as e:
-            LOGGER.info(str(e))
+            user = bot.get_chat_member(f"{FSUB_CHANNEL_ID}", message.from_user.id)
+            LOGGER.info(user.status)
+            if user.status not in ("member", "creator", "administrator", "supergroup"):
+                if message.from_user.username:
+                    uname = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.username}</a>'
+                else:
+                    uname = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>'
+                buttons = ButtonMaker()
+                chat_u = CHANNEL_USERNAME.replace("@", "")
+                buttons.buildbutton("👉🏻 CHANNEL LINK 👈🏻", f"https://t.me/{chat_u}")
+                help_msg = f"Dᴇᴀʀ {uname},\nYᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴊᴏɪɴ ᴍʏ Cʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ Bᴏᴛ \n\nCʟɪᴄᴋ ᴏɴ ᴛʜᴇ ʙᴇʟᴏᴡ Bᴜᴛᴛᴏɴ ᴛᴏ ᴊᴏɪɴ ᴍʏ Cʜᴀɴɴᴇʟ."
+                reply_message = sendMarkup(help_msg, bot, message, InlineKeyboardMarkup(buttons.build_menu(2)))
+                Thread(target=auto_delete_message, args=(bot, message, reply_message)).start()
+                return reply_message
+        except Exception:
+            pass
     if BOT_PM:
         try:
             msg1 = f'Added your Requested link to Download\n'
@@ -87,6 +89,7 @@ def _clone(message, bot, multi=0):
     args = message.text.split()
     reply_to = message.reply_to_message
     link = ''
+    multi=1
 
     if len(args) > 1:
         link = args[1].strip()
@@ -177,11 +180,10 @@ def _clone(message, bot, multi=0):
         if multi > 1:
             sleep(4)
             nextmsg = type('nextmsg', (object, ), {'chat_id': message.chat_id, 'message_id': message.reply_to_message.message_id + 1})
-            nextmsg = sendMessage(args[0], bot, nextmsg)
+            nextmsg = sendMessage(message.text.replace(str(multi), str(multi - 1), 1), bot, nextmsg)
             nextmsg.from_user.id = message.from_user.id
-            multi -= 1
             sleep(4)
-            Thread(target=_clone, args=(nextmsg, bot, multi)).start()
+            Thread(target=_clone, args=(nextmsg, bot)).start()        
         if files <= 20:
             msg = sendMessage(f"Cloning: <code>{link}</code>", bot, message)
             result, button = gd.clone(link)

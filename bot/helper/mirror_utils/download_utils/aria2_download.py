@@ -1,4 +1,5 @@
 from time import sleep, time
+from os import remove, path as ospath
 from bot import TELEGRAPH_STYLE, aria2, download_dict_lock, download_dict, STOP_DUPLICATE, BASE_URL, TORRENT_DIRECT_LIMIT, ZIP_UNZIP_LIMIT, LOGGER, STORAGE_THRESHOLD
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
 from bot.helper.ext_utils.bot_utils import is_magnet, getDownloadByGid, new_thread, bt_selection_buttons, get_readable_file_size
@@ -133,9 +134,10 @@ def __onBtDownloadComplete(api, gid):
         if listener.select:
             res = download.files
             for file_o in res:
-                if not file_o.selected:
+                f_path = file_o.path
+                if not file_o.selected and ospath.exists(f_path):
                     try:
-                        remove(file_o.path)
+                        remove(f_path)
                     except:
                         pass
             clean_unwanted(download.dir)

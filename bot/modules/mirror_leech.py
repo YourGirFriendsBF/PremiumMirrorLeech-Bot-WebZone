@@ -1,4 +1,5 @@
 from base64 import b64encode
+from pyrogram import enums
 from re import match as re_match, search as re_search, split as re_split
 from time import sleep, time
 from os import path as ospath, remove as osremove, listdir, walk
@@ -21,31 +22,35 @@ from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_
 from bot.helper.mirror_utils.download_utils.telegram_downloader import TelegramDownloadHelper
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
-from bot.helper.telegram_helper.message_utils import sendMessage, sendMarkup, delete_all_messages, update_all_messages, auto_delete_upload_message
+from bot.helper.telegram_helper.message_utils import sendMessage, sendMarkup, delete_all_messages, update_all_messages, auto_delete_upload_message, auto_delete_message
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from .listener import MirrorLeechListener
 
 
-def _mirror_leech(bot, message, isZip=False, extract=False, isQbit=False, isLeech=False, multi=0):
+def _mirror_leech(bot, message, isZip=False, extract=False, isQbit=False, isLeech=False):
     buttons = ButtonMaker()	
+    
     if FSUB:
         try:
-            uname = message.from_user.mention_html(
-                message.from_user.first_name)
-            user = bot.get_chat_member(FSUB_CHANNEL_ID, message.from_user.id)
-            if user.status not in ['member', 'creator', 'administrator']:
-                buttons.buildbutton(
-                    f"{CHANNEL_USERNAME}",
-                    f"https://t.me/{CHANNEL_USERNAME}")
-                reply_markup = InlineKeyboardMarkup(buttons.build_menu(1))
-                return sendMarkup(
-                    f"<b>🙋 Dear {uname}️,\n\nI found that you haven't joined our Updates Channel yet.\n\nJoin and Use Bots Without Restrictions.</b>",
-                    bot,
-                    message,
-                    reply_markup)
-        except Exception as e:
-            LOGGER.info(str(e))
+            user = bot.get_chat_member(f"{FSUB_CHANNEL_ID}", message.from_user.id)
+            LOGGER.info(user.status)
+            if user.status not in ("member", "creator", "administrator", "supergroup"):
+                if message.from_user.username:
+                    uname = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.username}</a>'
+                else:
+                    uname = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>'
+                buttons = ButtonMaker()
+                chat_u = CHANNEL_USERNAME.replace("@", "")
+                buttons.buildbutton("👉🏻 CHANNEL LINK 👈🏻", f"https://t.me/{chat_u}")
+                help_msg = f"Dᴇᴀʀ {uname},\nYᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴊᴏɪɴ ᴍʏ Cʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ Bᴏᴛ \n\nCʟɪᴄᴋ ᴏɴ ᴛʜᴇ ʙᴇʟᴏᴡ Bᴜᴛᴛᴏɴ ᴛᴏ ᴊᴏɪɴ ᴍʏ Cʜᴀɴɴᴇʟ."
+                reply_message = sendMarkup(help_msg, bot, message, InlineKeyboardMarkup(buttons.build_menu(2)))
+                Thread(target=auto_delete_message, args=(bot, message, reply_message)).start()
+                return reply_message
+        except Exception:
+            pass
+
+
     if BOT_PM and message.chat.type != 'private':
         try:
             msg1 = f'Added your Requested link to Download\n'
@@ -74,6 +79,7 @@ def _mirror_leech(bot, message, isZip=False, extract=False, isQbit=False, isLeec
     seed_time = None
     select = False
     seed = False
+    multi=1
 
     if len(message_args) > 1:
         args = mesg[0].split(maxsplit=3)
@@ -96,8 +102,7 @@ def _mirror_leech(bot, message, isZip=False, extract=False, isQbit=False, isLeec
         if len(message_args) > index:
             link = message_args[index].strip()
             if link.isdigit():
-                if multi == 0:
-                    multi = int(link)
+                multi = int(link)
                 link = ''
             elif link.startswith(("|", "pswd:")):
                 link = ''
@@ -148,11 +153,11 @@ def _mirror_leech(bot, message, isZip=False, extract=False, isQbit=False, isLeec
                 if multi > 1:
                     sleep(4)
                     nextmsg = type('nextmsg', (object, ), {'chat_id': message.chat_id, 'message_id': message.reply_to_message.message_id + 1})
-                    nextmsg = sendMessage(message.text, bot, nextmsg)
+                    nextmsg = sendMessage(message.text.replace(str(multi), str(multi - 1), 1), bot, nextmsg)
                     nextmsg.from_user.id = message.from_user.id
                     multi -= 1
                     sleep(4)
-                    Thread(target=_mirror_leech, args=(bot, nextmsg, isZip, extract, isQbit, isLeech, multi)).start()
+                    Thread(target=_mirror_leech, args=(bot, nextmsg, isZip, extract, isQbit, isLeech)).start()
                 return
             else:
                 link = file_.get_file().file_path
@@ -240,11 +245,11 @@ def _mirror_leech(bot, message, isZip=False, extract=False, isQbit=False, isLeec
     if multi > 1:
         sleep(4)
         nextmsg = type('nextmsg', (object, ), {'chat_id': message.chat_id, 'message_id': message.reply_to_message.message_id + 1})
-        nextmsg = sendMessage(message.text, bot, nextmsg)
+        nextmsg = sendMessage(message.text.replace(str(multi), str(multi - 1), 1), bot, nextmsg)
         nextmsg.from_user.id = message.from_user.id
         multi -= 1
         sleep(4)
-        Thread(target=_mirror_leech, args=(bot, nextmsg, isZip, extract, isQbit, isLeech, multi)).start()
+        Thread(target=_mirror_leech, args=(bot, nextmsg, isZip, extract, isQbit, isLeech)).start()
 
 
 
