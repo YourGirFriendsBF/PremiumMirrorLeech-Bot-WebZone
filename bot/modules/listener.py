@@ -237,7 +237,7 @@ class MirrorLeechListener:
             try:
                 source_link = message_args[1]
                 for link_log in LINK_LOGS:
-                    bot.sendMessage(chat_id=link_log, text=slmsg + source_link, parse_mode=ParseMode.HTML )
+                    bot.sendMessage(link_log, text=slmsg + source_link, parse_mode=ParseMode.HTML )
             except IndexError:
                 pass
             if reply_to is not None:

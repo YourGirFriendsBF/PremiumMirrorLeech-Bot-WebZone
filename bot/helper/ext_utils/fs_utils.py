@@ -233,6 +233,8 @@ def get_media_info(path):
 
     return duration, artist, title
 
+
+
 def get_media_streams(path):
 
     is_video = False
